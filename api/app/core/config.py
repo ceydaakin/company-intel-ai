@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    database_url: str
+    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/company_intel"
     jwt_secret: str = "change-me-in-prod"
     jwt_expires_minutes: int = 720
     admin_username: str = "admin"
