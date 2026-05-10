@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from prometheus_fastapi_instrumentator import Instrumentator
 from app.core.config import get_settings
 from app.api.routes import auth as auth_routes
 from app.api.routes import companies as companies_routes
@@ -26,3 +27,5 @@ app.include_router(auth_routes.router)
 app.include_router(companies_routes.router)
 app.include_router(notes_routes.router)
 app.include_router(compare_routes.router)
+
+Instrumentator().instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
