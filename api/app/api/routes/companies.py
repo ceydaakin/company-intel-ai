@@ -1,11 +1,15 @@
 import uuid
+from io import BytesIO
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_ai, require_admin
 from app.db.session import get_db
 from app.schemas.company import CompanyCreate, CompanyDetail, CompanyListItem, CompanyPatch
 from app.services import company_repo, report_service
 from app.services.ai.provider import AIProvider
+from app.services.pdf_service import render_pdf
+from app.observability.metrics import pdf_exports_total
 
 router = APIRouter(prefix="/api/companies", tags=["companies"], dependencies=[Depends(require_admin)])
 
@@ -78,3 +82,14 @@ async def regenerate_endpoint(
     except Exception as e:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"AI generation failed: {e}") from e
     return await company_repo.get_company(db, company_id)
+
+
+@router.get("/{company_id}/export.pdf")
+async def export_pdf(company_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    company = await company_repo.get_company(db, company_id)
+    if not company:
+        raise HTTPException(status.HTTP_404_NOT_FOUND)
+    pdf_bytes = render_pdf(company)
+    pdf_exports_total.inc()
+    headers = {"Content-Disposition": f'attachment; filename="{company.name}-report.pdf"'}
+    return StreamingResponse(BytesIO(pdf_bytes), media_type="application/pdf", headers=headers)
