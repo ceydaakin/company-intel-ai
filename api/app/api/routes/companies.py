@@ -1,10 +1,11 @@
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.api.deps import require_admin
+from app.api.deps import get_ai, require_admin
 from app.db.session import get_db
-from app.schemas.company import CompanyDetail, CompanyListItem, CompanyPatch
-from app.services import company_repo
+from app.schemas.company import CompanyCreate, CompanyDetail, CompanyListItem, CompanyPatch
+from app.services import company_repo, report_service
+from app.services.ai.provider import AIProvider
 
 router = APIRouter(prefix="/api/companies", tags=["companies"], dependencies=[Depends(require_admin)])
 
@@ -47,3 +48,33 @@ async def delete_endpoint(company_id: uuid.UUID, db: AsyncSession = Depends(get_
     if not company:
         raise HTTPException(status.HTTP_404_NOT_FOUND)
     await company_repo.delete_company(db, company)
+
+
+@router.post("", response_model=CompanyDetail, status_code=status.HTTP_201_CREATED)
+async def create_endpoint(
+    payload: CompanyCreate,
+    db: AsyncSession = Depends(get_db),
+    ai: AIProvider = Depends(get_ai),
+):
+    try:
+        company = await report_service.create_with_report(db, payload, ai)
+    except Exception as e:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"AI generation failed: {e}") from e
+    # eagerly load relationships for response
+    return await company_repo.get_company(db, company.id)
+
+
+@router.post("/{company_id}/regenerate", response_model=CompanyDetail)
+async def regenerate_endpoint(
+    company_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    ai: AIProvider = Depends(get_ai),
+):
+    company = await company_repo.get_company(db, company_id)
+    if not company:
+        raise HTTPException(status.HTTP_404_NOT_FOUND)
+    try:
+        await report_service.regenerate_report(db, company, ai)
+    except Exception as e:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"AI generation failed: {e}") from e
+    return await company_repo.get_company(db, company_id)

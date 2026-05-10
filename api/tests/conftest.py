@@ -2,9 +2,11 @@ import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 import app.models  # noqa: F401  — must register models before importing main/Base users
+from app.api.deps import get_ai
 from app.db.base import Base
 from app.db.session import get_db
 from app.main import app
+from app.services.ai.stub_client import StubClient
 
 TEST_DB_URL = "sqlite+aiosqlite:///:memory:"
 
@@ -27,12 +29,14 @@ async def db_session(db_engine):
 
 @pytest_asyncio.fixture
 async def client(db_session):
-    async def _override():
+    async def _db_override():
         yield db_session
-    app.dependency_overrides[get_db] = _override
+    def _ai_override():
+        return StubClient()
+    app.dependency_overrides[get_db] = _db_override
+    app.dependency_overrides[get_ai] = _ai_override
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        # log in once so authenticated routes work
         await ac.post("/api/auth/login", json={"username": "admin", "password": "Revo123456"})
         yield ac
     app.dependency_overrides.clear()
