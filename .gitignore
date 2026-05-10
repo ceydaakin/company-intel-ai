@@ -24,6 +24,8 @@ dist/
 build/
 .vite/
 *.tsbuildinfo
+ui/vite.config.js
+ui/vite.config.d.ts
 
 # Env files
 .env
