@@ -29,7 +29,7 @@ async def create_with_report(db: AsyncSession, payload: CompanyCreate, ai: AIPro
     company.status = "ready"
     company.error_message = None
     await db.commit()
-    await db.refresh(company)
+    await db.refresh(company, attribute_names=["competitors", "notes"])
     return company
 
 
@@ -58,7 +58,7 @@ async def regenerate_report(db: AsyncSession, company: Company, ai: AIProvider) 
     company.status = "ready"
     company.error_message = None
     await db.commit()
-    await db.refresh(company)
+    await db.refresh(company, attribute_names=["competitors", "notes"])
     return company
 
 
