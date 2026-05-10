@@ -53,3 +53,7 @@ class CompanyDetail(CompanyListItem):
     error_message: str | None
     competitors: list[CompetitorRow]
     notes: list[NoteOut]
+
+
+class NoteCreate(BaseModel):
+    body: str = Field(min_length=1, max_length=2000)
