@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import get_settings
 from app.api.routes import auth as auth_routes
+from app.api.routes import companies as companies_routes
 
 settings = get_settings()
 app = FastAPI(title="Company Intel API", version="0.1.0")
@@ -20,3 +21,4 @@ def healthz() -> dict[str, str]:
 
 
 app.include_router(auth_routes.router)
+app.include_router(companies_routes.router)

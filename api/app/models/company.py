@@ -1,14 +1,15 @@
 import uuid
 from datetime import datetime
 from sqlalchemy import Boolean, DateTime, Integer, String, Text, func
-from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
+from app.db.types import GUID, JSONB
+
 
 class Company(Base):
     __tablename__ = "companies"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
     hq: Mapped[str | None] = mapped_column(String(200))
     website: Mapped[str | None] = mapped_column(String(500))
