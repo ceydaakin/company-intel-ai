@@ -14,6 +14,19 @@ services:
       timeout: 3s
       retries: 10
 
+  api:
+    build: ./api
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/company_intel
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-prod}
+      AI_PROVIDER: ${AI_PROVIDER:-gemini}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_MODEL: ${AI_MODEL:-gemini-2.5-flash}
+      CORS_ORIGINS: http://localhost:5173
+    ports: ["8000:8000"]
+    depends_on:
+      db: { condition: service_healthy }
+
   prometheus:
     image: prom/prometheus:latest
     volumes:
